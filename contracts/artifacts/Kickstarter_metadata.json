@@ -1,0 +1,95 @@
+{
+	"compiler": {
+		"version": "0.8.26+commit.8a97fa7a"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "campaigns",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "campaignId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "entrepreneur",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "title",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "pledgeCost",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "pledgesNeeded",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "pledgesCount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "fulfilled",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/Blockchain_task.sol": "Kickstarter"
+		},
+		"evmVersion": "berlin",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/Blockchain_task.sol": {
+			"keccak256": "0x6deaa50c3f9e9906ce7b1d117063942486ff891225ea5f7f2fd77f34e7b3b841",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://b99a39c01037d824244b2a0f1c88747b08518b74443418b229dcb8d0a4abf369",
+				"dweb:/ipfs/QmRK3gUWUewdMo5TnaU1JkC8beEWApAGbiYBQ4QJ7iPSkh"
+			]
+		}
+	},
+	"version": 1
+}
