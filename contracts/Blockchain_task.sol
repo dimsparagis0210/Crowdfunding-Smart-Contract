@@ -124,6 +124,7 @@ contract Crowdfunding {
         owner = msg.sender;
         campaignFee = _campaignFee;
         isContractActive = true;
+        totalFeesCollected = 0;
     }
 
     // Functions
@@ -178,8 +179,10 @@ contract Crowdfunding {
         require(msg.value == totalCost, "Incorrect Wei value sent");
 
         campaign.currentShares += numberOfShares;
-        campaign.sharesPerBacker[msg.sender] += numberOfShares;
-        campaign.backers.push(msg.sender);
+        if (campaign.sharesPerBacker[msg.sender] == 0) {
+            campaign.backers.push(msg.sender);
+        }
+        campaign.sharesPerBacker[msg.sender] += numberOfShares;    
 
         emit SharesPurchased(campaignId, msg.sender, numberOfShares);
     }
@@ -211,13 +214,7 @@ contract Crowdfunding {
         emit CampaignCancelled(campaignId, msg.sender, campaign.title);
     }
 
-    function refundInvestor(address investor) public {
-        // Ensure the caller is either the owner or the investor themselves
-        require(
-            msg.sender == investor || msg.sender == owner,
-            "Only the investor or the contract owner can initiate a refund"
-        );
-
+    function refundInvestor(address investor) notBanned public {
         // Retrieve the refund amount for the specified investor
         uint256 refundAmount = refunds[investor];
         require(refundAmount > 0, "No refund available for this investor");
@@ -231,6 +228,8 @@ contract Crowdfunding {
         // Emit an event for logging purposes
         emit InvestorRefunded(investor, refundAmount);
     }
+
+    event Debugging(uint256 id, uint256 fees);
 
     // 5. Campaign Completion
     function completeCampaign(uint256 campaignId)
@@ -252,7 +251,7 @@ contract Crowdfunding {
         uint256 entrepreneurPayout = (address(this).balance * 80) / 100;
         payable(campaign.entrepreneur).transfer(entrepreneurPayout);
 
-        totalFeesCollected = (address(this).balance * 20) / 100;
+        totalFeesCollected = (address(this).balance);
 
         campaign.isActive = false;
         campaign.isCompleted = true;
@@ -270,7 +269,7 @@ contract Crowdfunding {
         emit FeesWithdrawn(owner, amount + remaining);
     }
 
-    function getActiveCount() public view returns (uint256) {
+    function getActiveCount() public view activeContract returns (uint256) {
         uint256 activeCount = 0;
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (!campaigns[i].isCompleted && !campaigns[i].isCancelled) {
@@ -282,7 +281,12 @@ contract Crowdfunding {
 
     // 7. Getters
     // Active Campaigns
-    function getActiveCampaigns() public view returns (CampaignInfo[] memory) {
+    function getActiveCampaigns()
+        public
+        view
+        activeContract
+        returns (CampaignInfo[] memory)
+    {
         uint256 activeCount = 0;
 
         // Count active campaigns
@@ -320,6 +324,7 @@ contract Crowdfunding {
     function getCompletedCampaigns()
         public
         view
+        activeContract
         returns (CampaignInfo[] memory)
     {
         uint256 activeCount = 0;
@@ -361,6 +366,7 @@ contract Crowdfunding {
     function getCancelledCampaigns()
         public
         view
+        activeContract
         returns (CampaignInfo[] memory)
     {
         uint256 cancelledCount = 0;
@@ -398,33 +404,11 @@ contract Crowdfunding {
         return cancelledCampaigns;
     }
 
-    // Fees
-    function getTotalFees() public view returns (uint256 totalFees) {
-        uint256 campaignCreationFees = campaignCounter * campaignFee; // Flat fees for all campaigns
-        uint256 completionFees = 0;
-
-        // Calculate 20% fees from completed campaigns
-        for (uint256 i = 0; i < campaignCounter; i++) {
-            if (campaigns[i].isCompleted) {
-                uint256 campaignFunds = campaigns[i].totalShares *
-                    campaigns[i].sharePrice;
-                completionFees += (campaignFunds * 20) / 100; // 20% fee
-            }
-        }
-
-        // Total fees are the sum of flat and completion fees
-        totalFees = campaignCreationFees + completionFees;
-    }
-
-    // Banned Investors
-    function getBannedInvestors() public view returns (address[] memory) {
-        return bannedAddresses;
-    }
-
     // Info about campaign's investors
     function getInvestorsAndShares(uint256 campaignId)
         public
         view
+        activeContract
         campaignExists(campaignId)
         returns (address[] memory investors, uint256[] memory shares)
     {
@@ -442,8 +426,46 @@ contract Crowdfunding {
         }
     }
 
+    // Investments by an investor
+    function getInvestmentsByInvestor(address investor)
+        public
+        view
+        returns (uint256[] memory campaignIds, uint256[] memory shares)
+    {
+        // Count the number of campaigns the investor has shares in
+        uint256 investmentCount = 0;
+
+        for (uint256 i = 0; i < campaignCounter; i++) {
+            if (campaigns[i].sharesPerBacker[investor] > 0) {
+                investmentCount++;
+            }
+        }
+
+        // Create arrays to store the results
+        campaignIds = new uint256[](investmentCount);
+        shares = new uint256[](investmentCount);
+
+        // Populate the arrays with data
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCounter; i++) {
+            uint256 investorShares = campaigns[i].sharesPerBacker[investor];
+            if (investorShares > 0) {
+                campaignIds[index] = i;
+                shares[index] = investorShares;
+                index++;
+            }
+        }
+
+        return (campaignIds, shares);
+    }
+
     // Add an investor in the banned list
-    function banInvestor(address investor) public onlyOwner notBanned {
+    function banInvestor(address investor)
+        public
+        activeContract
+        onlyOwner
+        notBanned
+    {
         // Προσθήκη στη λίστα banned
         bannedList[investor] = true;
         bannedAddresses.push(investor);
@@ -451,13 +473,13 @@ contract Crowdfunding {
     }
 
     // Change contract owner
-    function changeOwner(address newOwner) public onlyOwner {
+    function changeOwner(address newOwner) public onlyOwner activeContract {
         require(newOwner != address(0), "New owner cannot be the zero address");
         owner = newOwner;
     }
 
     // Destroy Contract
-    function destroyContract() public onlyOwner {
+    function destroyContract() public onlyOwner activeContract {
         for (uint256 i = 0; i < campaignCounter; i++) {
             Campaign storage campaign = campaigns[i];
 
@@ -477,5 +499,6 @@ contract Crowdfunding {
                 refunds[backer] += refundAmount;
             }
         }
+        isContractActive = false;
     }
 }

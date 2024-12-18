@@ -96,6 +96,25 @@
 				"inputs": [
 					{
 						"indexed": false,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "fees",
+						"type": "uint256"
+					}
+				],
+				"name": "Debugging",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
 						"internalType": "address",
 						"name": "owner",
 						"type": "address"
@@ -447,19 +466,6 @@
 			},
 			{
 				"inputs": [],
-				"name": "getBannedInvestors",
-				"outputs": [
-					{
-						"internalType": "address[]",
-						"name": "",
-						"type": "address[]"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "getCancelledCampaigns",
 				"outputs": [
 					{
@@ -571,6 +577,30 @@
 			{
 				"inputs": [
 					{
+						"internalType": "address",
+						"name": "investor",
+						"type": "address"
+					}
+				],
+				"name": "getInvestmentsByInvestor",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "campaignIds",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "shares",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "uint256",
 						"name": "campaignId",
 						"type": "uint256"
@@ -587,19 +617,6 @@
 						"internalType": "uint256[]",
 						"name": "shares",
 						"type": "uint256[]"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "getTotalFees",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "totalFees",
-						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -699,11 +716,11 @@
 	},
 	"sources": {
 		"contracts/Blockchain_task.sol": {
-			"keccak256": "0x7797cea7c22dde891ec0cdd58998d1a26943ef90e0e861b08862c01edc131d94",
+			"keccak256": "0x4eb8fa565be4a903b503be6ff0259422b70b59cd50ba47fac9f0a38207374cc7",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://cfbe31981da7de7db69b7e821922c491b80e13306cf3ec81cfc32710fb1423f7",
-				"dweb:/ipfs/QmaXgGUuw1vKTM6UtxaHHWijK9yPiuFYDqgvoCtZnwrwJG"
+				"bzz-raw://0e2fdc72645981d2cf18a1dabc2917d69a1468db72658f38d82e2b8540e89e4b",
+				"dweb:/ipfs/QmWf1LjJNoqLL3vCMpZWzBz8p9E8LkEXrBQj837MLhA3Q9"
 			]
 		}
 	},
