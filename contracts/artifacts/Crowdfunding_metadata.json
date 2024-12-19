@@ -96,25 +96,6 @@
 				"inputs": [
 					{
 						"indexed": false,
-						"internalType": "uint256",
-						"name": "id",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "fees",
-						"type": "uint256"
-					}
-				],
-				"name": "Debugging",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": false,
 						"internalType": "address",
 						"name": "owner",
 						"type": "address"
@@ -453,19 +434,6 @@
 			},
 			{
 				"inputs": [],
-				"name": "getActiveCount",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "getCancelledCampaigns",
 				"outputs": [
 					{
@@ -716,11 +684,11 @@
 	},
 	"sources": {
 		"contracts/Blockchain_task.sol": {
-			"keccak256": "0x4eb8fa565be4a903b503be6ff0259422b70b59cd50ba47fac9f0a38207374cc7",
+			"keccak256": "0x2a0cf7fe8b6a5fb76e8b03a541c966ecff5737773c205e40a0340a5867a20124",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://0e2fdc72645981d2cf18a1dabc2917d69a1468db72658f38d82e2b8540e89e4b",
-				"dweb:/ipfs/QmWf1LjJNoqLL3vCMpZWzBz8p9E8LkEXrBQj837MLhA3Q9"
+				"bzz-raw://ce3080dc21a4ea80122b993589c0cd121bcdcaff73e00ab33cc6d22f267a41ac",
+				"dweb:/ipfs/QmXAbRB7bRNaJHF8Nigp7nefViWgAZQ6pZYAvGkp815Vn1"
 			]
 		}
 	},

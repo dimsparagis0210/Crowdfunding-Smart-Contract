@@ -16,6 +16,8 @@ contract Crowdfunding {
         mapping(address => uint256) sharesPerBacker;
     }
 
+    // 1000000000000000000 wei = 1 eth
+
     struct CampaignInfo {
         uint256 campaignId;
         address entrepreneur;
@@ -28,7 +30,7 @@ contract Crowdfunding {
     }
 
     address public owner; // Ιδιοκτήτης συμβολαίου
-    uint256 public campaignFee; // Τέλος καμπάνιας (π.χ. 0.02 Ether)
+    uint256 public campaignFee; // Τέλος καμπάνιας
     uint256 public totalFeesCollected; // Συνολικά συγκεντρωμένα fees
     uint256 private campaignCounter; // Αύξων αριθμός για καμπάνιες
     mapping(uint256 => Campaign) public campaigns; // Αποθήκευση καμπανιών
@@ -127,8 +129,8 @@ contract Crowdfunding {
         totalFeesCollected = 0;
     }
 
-    // Functions
-    // 1. Create the Campaign
+    // Συναρτήσεις
+    // 1. Δημιουργία καμπάνιας
     function createCampaign(
         string memory title,
         uint256 sharePrice,
@@ -142,6 +144,7 @@ contract Crowdfunding {
         enoughShares(totalShares)
         activeContract
     {
+        // Δημιουργία καινούριας καμπάνιας και ανανέωση των ιδιοτήτων της
         Campaign storage newCampaign = campaigns[campaignCounter];
         newCampaign.campaignId = campaignCounter;
         newCampaign.entrepreneur = msg.sender;
@@ -156,7 +159,7 @@ contract Crowdfunding {
         emit CampaignCreated(campaignCounter, msg.sender, title);
     }
 
-    // 2. Campaign Funding
+    // 2. Χρηματοδότηση καμπάνιας
     function campaignFunding(uint256 numberOfShares, uint256 campaignId)
         public
         payable
@@ -167,6 +170,7 @@ contract Crowdfunding {
         notCompleted(campaignId)
         activeContract
     {
+        // Εύρεση καμπάνιας με βάση το campaignId στο mapping campaigns
         Campaign storage campaign = campaigns[campaignId];
         require(
             msg.sender != campaign.entrepreneur,
@@ -175,31 +179,33 @@ contract Crowdfunding {
 
         uint256 totalCost = campaign.sharePrice * numberOfShares;
 
-        // Checking if backer is paying enough eth for the number of shares he asked
         require(msg.value == totalCost, "Incorrect Wei value sent");
 
+        // Αύξηση του αριθμού των αγορασμένων μετοχών και ανανέωση των δομών δεδομένων που αφορούν τους επενδυτές
         campaign.currentShares += numberOfShares;
         if (campaign.sharesPerBacker[msg.sender] == 0) {
             campaign.backers.push(msg.sender);
         }
-        campaign.sharesPerBacker[msg.sender] += numberOfShares;    
+        campaign.sharesPerBacker[msg.sender] += numberOfShares;
 
         emit SharesPurchased(campaignId, msg.sender, numberOfShares);
     }
 
-    // 3. Cancel Campaign
+    // 3. Ακύρωση καμπάνιας
     function cancelCampaign(uint256 campaignId)
         public
         activeCampaign(campaignId)
         notCompleted(campaignId)
         activeContract
     {
+        // Εύρεση καμπάνιας με βάση το campaignId στο mapping campaigns
         Campaign storage campaign = campaigns[campaignId];
         require(
             msg.sender == campaign.entrepreneur || msg.sender == owner,
             "Only the entrepreneur or owner can cancel this campaign"
         );
 
+        // Απενεργοποίηση και ακύρωση καμπάνιας
         campaign.isActive = false;
         campaign.isCancelled = true;
 
@@ -214,73 +220,73 @@ contract Crowdfunding {
         emit CampaignCancelled(campaignId, msg.sender, campaign.title);
     }
 
-    function refundInvestor(address investor) notBanned public {
-        // Retrieve the refund amount for the specified investor
+    // Αποζημίωση επενδυτή
+    function refundInvestor(address investor) public notBanned {
+        // Εύρεση ποσού αποζημίωσης για τον επενδυτή
         uint256 refundAmount = refunds[investor];
         require(refundAmount > 0, "No refund available for this investor");
 
-        // Reset the refund amount for the investor
+        // Επαναφορά του ποσού αποζημίωσης στο 0
         refunds[investor] = 0;
 
-        // Transfer the refund amount to the specified investor
+        // Μεταφορά των χρημάτων στον επενδυτή
         payable(investor).transfer(refundAmount);
 
-        // Emit an event for logging purposes
         emit InvestorRefunded(investor, refundAmount);
     }
 
-    event Debugging(uint256 id, uint256 fees);
-
-    // 5. Campaign Completion
+    // 5. Ολοκλήρωση καμπάνιας
     function completeCampaign(uint256 campaignId)
         public
         activeCampaign(campaignId)
         notCancelled(campaignId)
-        activeContract
     {
+        // Εύρεση καμπάνιας με βάση το campaignId στο mapping campaigns
         Campaign storage campaign = campaigns[campaignId];
+
         require(
             msg.sender == campaign.entrepreneur || msg.sender == owner,
             "Only the entrepreneur or owner can complete this campaign"
         );
         require(
-            campaign.currentShares >= campaign.totalShares,
+            campaign.currentShares == campaign.totalShares,
             "Campaign does not have enough shares"
         );
 
-        uint256 entrepreneurPayout = (address(this).balance * 80) / 100;
+        // Υπολογισμός αμοιβής επιχειρηματία για την ολοκλήρωση της συγκεκριμένης καμπάνιας
+        uint256 campaignBalance = campaign.currentShares * campaign.sharePrice;
+        uint256 entrepreneurPayout = (campaignBalance * 80) / 100;
+
+        // Μεταφορά της αμοιβής στον επενδυτή
         payable(campaign.entrepreneur).transfer(entrepreneurPayout);
 
-        totalFeesCollected = (address(this).balance);
+        // Μεταφορά του υπόλοιπου 20% στα τέλη του συμβολαίου
+        uint256 fees = campaignBalance - entrepreneurPayout;
+        totalFeesCollected += fees;
 
+        // Απενεργοποίηση και ολοκλήρωση καμπάνιας
         campaign.isActive = false;
         campaign.isCompleted = true;
 
         emit CampaignCompleted(campaignId, msg.sender, campaign.title);
     }
 
-    // 6. Other functionality
+    // 6. Απόσυρση κρατήσεων
     function withdrawFees() public onlyOwner activeContract {
         uint256 amount = totalFeesCollected;
+
+        // Επαναφορά της global μεταβλητής για τις κρατήσεις
         totalFeesCollected = 0;
 
+        // Μεταφορά των κρατήσεων στον ιδιοκτήτη του συμβολαίου
         payable(owner).transfer(amount);
         uint256 remaining = address(this).balance;
+
         emit FeesWithdrawn(owner, amount + remaining);
     }
 
-    function getActiveCount() public view activeContract returns (uint256) {
-        uint256 activeCount = 0;
-        for (uint256 i = 0; i < campaignCounter; i++) {
-            if (!campaigns[i].isCompleted && !campaigns[i].isCancelled) {
-                activeCount++;
-            }
-        }
-        return activeCount;
-    }
-
     // 7. Getters
-    // Active Campaigns
+    // Ενεργές καμπάνιες
     function getActiveCampaigns()
         public
         view
@@ -289,18 +295,18 @@ contract Crowdfunding {
     {
         uint256 activeCount = 0;
 
-        // Count active campaigns
+        // Μέτρηση των ενεργών καμπάνιων
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (!campaigns[i].isCompleted && !campaigns[i].isCancelled) {
                 activeCount++;
             }
         }
 
-        // Create an array in memory for the results
+        // Δημιουργία array για αποθήκευση των ενεργών καμπάνιων
         CampaignInfo[] memory activeCampaigns = new CampaignInfo[](activeCount);
         uint256 index = 0;
 
-        // Add active campaigns to the result
+        // Προσθήκη ενεργών καμπάνιων στο array
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (!campaigns[i].isCompleted && !campaigns[i].isCancelled) {
                 activeCampaigns[index] = CampaignInfo(
@@ -320,7 +326,7 @@ contract Crowdfunding {
         return activeCampaigns;
     }
 
-    // Completed campaigns
+    // Ολοκληρωμένες καμπάνιες
     function getCompletedCampaigns()
         public
         view
@@ -329,20 +335,20 @@ contract Crowdfunding {
     {
         uint256 activeCount = 0;
 
-        // Count completed campaigns
+        // Μέτρηση των ολοκληρωμένων καμπάνιων
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (campaigns[i].isCompleted && !campaigns[i].isCancelled) {
                 activeCount++;
             }
         }
 
-        // Create an array in memory for the results
+        // Δημιουργία array για αποθήκευση των ολοκληρωμένων καμπάνιων
         CampaignInfo[] memory completedCampaigns = new CampaignInfo[](
             activeCount
         );
         uint256 index = 0;
 
-        // Add completed campaigns to the result
+        // Προσθήκη ολοκληρωμένων καμπάνιων στο array
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (campaigns[i].isCompleted && !campaigns[i].isCancelled) {
                 completedCampaigns[index] = CampaignInfo(
@@ -362,7 +368,7 @@ contract Crowdfunding {
         return completedCampaigns;
     }
 
-    // Cancelled campaigns
+    // Ακυρωμένες καμπάνιες
     function getCancelledCampaigns()
         public
         view
@@ -371,20 +377,20 @@ contract Crowdfunding {
     {
         uint256 cancelledCount = 0;
 
-        // Count cancelled campaigns
+        // Μέτρηση των ακυρωμένων καμπάνιων
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (campaigns[i].isCancelled) {
                 cancelledCount++;
             }
         }
 
-        // Create an array in memory for the results
+        // Δημιουργία array για αποθήκευση των ακυρωμένων καμπάνιων
         CampaignInfo[] memory cancelledCampaigns = new CampaignInfo[](
             cancelledCount
         );
         uint256 index = 0;
 
-        // Add cancelled campaigns to the result
+        // Προσθήκη ακυρωμένων καμπάνιων στο array
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (campaigns[i].isCancelled) {
                 cancelledCampaigns[index] = CampaignInfo(
@@ -404,7 +410,7 @@ contract Crowdfunding {
         return cancelledCampaigns;
     }
 
-    // Info about campaign's investors
+    // Πληροφορίες για τους επενδυτές μιας καμπάνιας
     function getInvestorsAndShares(uint256 campaignId)
         public
         view
@@ -412,13 +418,15 @@ contract Crowdfunding {
         campaignExists(campaignId)
         returns (address[] memory investors, uint256[] memory shares)
     {
+        // Εύρεση καμπάνιας με βάση το campaignId στο mapping campaigns
         Campaign storage campaign = campaigns[campaignId];
 
-        // Αποθήκευσε τους επενδυτές και τις μετοχές τους
+        // Αποθήκευση των επενδυτών και των μετοχών τους
         uint256 investorCount = campaign.backers.length;
         investors = new address[](investorCount);
         shares = new uint256[](investorCount);
 
+        // Ενημέρωση των δομών δεδομένων εξόδου
         for (uint256 i = 0; i < investorCount; i++) {
             address backer = campaign.backers[i];
             investors[i] = backer;
@@ -426,26 +434,26 @@ contract Crowdfunding {
         }
     }
 
-    // Investments by an investor
+    // Πληροφορίες για τις επενδύσεις ενός επενσυτή
     function getInvestmentsByInvestor(address investor)
         public
         view
         returns (uint256[] memory campaignIds, uint256[] memory shares)
     {
-        // Count the number of campaigns the investor has shares in
         uint256 investmentCount = 0;
 
+        // Μέτρηση του αριθμού επενδύσεων ενός επενδυτή
         for (uint256 i = 0; i < campaignCounter; i++) {
             if (campaigns[i].sharesPerBacker[investor] > 0) {
                 investmentCount++;
             }
         }
 
-        // Create arrays to store the results
+        // Δημιουργία arrays για αποθήκευση των αποτελεσμάτων
         campaignIds = new uint256[](investmentCount);
         shares = new uint256[](investmentCount);
 
-        // Populate the arrays with data
+        // Εύρεση των αριθμών μετοχών που κατέχει ο επενδυτής για κάθε καμπάνια
         uint256 index = 0;
         for (uint256 i = 0; i < campaignCounter; i++) {
             uint256 investorShares = campaigns[i].sharesPerBacker[investor];
@@ -459,7 +467,7 @@ contract Crowdfunding {
         return (campaignIds, shares);
     }
 
-    // Add an investor in the banned list
+    // Αποκλεισμός επενδυτή
     function banInvestor(address investor)
         public
         activeContract
@@ -472,26 +480,29 @@ contract Crowdfunding {
         bannedCounter++;
     }
 
-    // Change contract owner
+    // Αλλαγή ιδιοκτήτη συμβολαίου
     function changeOwner(address newOwner) public onlyOwner activeContract {
         require(newOwner != address(0), "New owner cannot be the zero address");
         owner = newOwner;
     }
 
-    // Destroy Contract
+    // Καταστροφή συμβολαίου
     function destroyContract() public onlyOwner activeContract {
+        // Ακύρωση ενεργών καμπάνιων
         for (uint256 i = 0; i < campaignCounter; i++) {
+            // Εύρεση καμπάνιας με βάση το campaignId στο mapping campaigns
             Campaign storage campaign = campaigns[i];
 
-            // Skip already cancelled or completed campaigns
+            // Προσπέραση των ολοκληρωμένων και ακυρωμένων καμπάνιων
             if (campaign.isCancelled || campaign.isCompleted) {
                 continue;
             }
 
+            // Απενεργοποίηση και ακύρωση της καμπάνιας
             campaign.isActive = false;
             campaign.isCancelled = true;
 
-            // Record refunds for all investors in the campaign
+            // Ανανέωση της δομής refunds για μελλοντική αποζημείωση επενδυτών
             for (uint256 j = 0; j < campaign.backers.length; j++) {
                 address backer = campaign.backers[j];
                 uint256 shares = campaign.sharesPerBacker[backer];
@@ -499,6 +510,8 @@ contract Crowdfunding {
                 refunds[backer] += refundAmount;
             }
         }
+
+        // Ανανέωση σφαιρικής μεταβλητής
         isContractActive = false;
     }
 }
